@@ -1,0 +1,46 @@
+#!/bin/ksh -p
+
+SESSFILE=$HOME/.bw_session
+
+export BW_SESSION="$(cat $SESSFILE)"
+
+status=$(bw.real status | jq -r .status)
+if [ "$status" != "unlocked" ]
+then
+  echo Need to unlock
+  BW_SESSION=$(bw.real unlock --raw)
+  if [ -n "$BW_SESSION" ]
+  then
+    echo "$BW_SESSION" > $SESSFILE
+  fi
+fi
+
+case $1 in
+       sync) bw.real sync ; exit ;;
+       list) bw.real $@ ; exit ;;
+  -cmd|-raw) shift ; bw.real $@ ; exit ;;
+esac
+
+bw.real list items --search $@ | jq -r '
+def colors:
+ {
+ "black": "\u001b[30m",
+ "red": "\u001b[31m",
+ "green": "\u001b[32m",
+ "yellow": "\u001b[33m",
+ "blue": "\u001b[34m",
+ "magenta": "\u001b[35m",
+ "cyan": "\u001b[36m",
+ "white": "\u001b[37m",
+ "reset": "\u001b[0m",
+};
+
+def pc($text; color):
+  (colors | color) + $text + colors.reset;
+
+.[]| pc(.name; .blue) + pc(" [id: " + .id + "]"; .green) +
+     "\n  " + pc("Username: "; .yellow) + .login.username +
+     "\n  " + pc("Password: "; .yellow) + .login.password +
+     "\n       " + pc("URL: "; .yellow) + .login.uris[].uri +
+     "\n========================================"
+'
