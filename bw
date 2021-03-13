@@ -7,7 +7,7 @@ export BW_SESSION="$(cat $SESSFILE)"
 status=$(bw.real status | jq -r .status)
 if [ "$status" != "unlocked" ]
 then
-  echo Need to unlock
+  echo Need to unlock >&2
   BW_SESSION=$(bw.real unlock --raw)
   if [ -n "$BW_SESSION" ]
   then
