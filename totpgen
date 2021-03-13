@@ -1,0 +1,68 @@
+#!/usr/bin/perl
+
+use strict;
+
+# This is a simple TOTP generator; the seed is passed on the command line
+# and this algorithm will output the current and next values in a loop
+# Yes, it's bad to put secrets on the command line so only use this on
+# a machine you trust.
+# The generator function main algorithm came from
+#   https://github.com/j256/perl-two-factor-auth/blob/master/totp.pl
+# but using MIME::Base32 do convert base32 to binary
+#
+# That routine is Copyright 2015, Gray Watson
+#
+# I'm not using the code directly, but I can't claim this is a clean
+# room re-implementation!
+
+use Digest::HMAC_SHA1 qw( hmac_sha1_hex );
+use MIME::Base32 qw( RFC );
+
+# In the more general case this should be an input, but I've never
+# seen one that isn't 30 seconds.  So... lazy me!
+my $TIME_STEP = 30;
+
+my $pname=$0; $pname=~s!^.*/!!;
+
+my $seed = join("",@ARGV);
+die "Syntax: $pname base32seed\n" unless $seed;
+
+$seed=~s/ //g;
+
+sub do_totp($$)
+{
+  my ($seed,$time) = @_;
+
+  # For more details of this magic algorithm, see:
+  # http://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm
+
+  # Round the time down to the stepping value and convert to hex
+  $time = sprintf("%016x", int($time / $TIME_STEP));
+
+  # And convert it to binary
+  my $data = pack('H*', $time);
+
+  # Get the real binary seed
+  my $key =  MIME::Base32::decode($seed);
+
+  # encrypt the data with the key and return the SHA1 of it in hex
+  my $hmac = hmac_sha1_hex($data, $key);
+
+  # Now this is where I do a lot of trust in Gray's code...
+  my $offset = hex(substr($hmac, -1));
+  my $encrypted = hex(substr($hmac, $offset * 2, 8)) & 0x7fffffff;
+
+  # the token is then the last 6 digits in the number
+  my $token = $encrypted % 1000000;
+  return sprintf("%06d", $token);
+}
+
+$|=1;
+while (1) {
+  my $time=time();
+  my $code = do_totp($seed,$time);
+  my $nextcode = do_totp($seed,$time+$TIME_STEP);
+  my $diff = $TIME_STEP - ($time % $TIME_STEP);
+  print "Current = $code - Next = $nextcode - Change in $diff seconds  \r";
+  sleep(1);
+}

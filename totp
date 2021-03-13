@@ -1,0 +1,2 @@
+#!/bin/sh
+totpgen $(bw -raw list items --search "$@" | jq -r '.[]|select(.type==1)|.login.totp' | sed 's!.*/!!')
