@@ -38,7 +38,7 @@ def colors:
 def pc($text; color):
   (colors | color) + $text + colors.reset;
 
-.[]| pc(.name; .blue) + pc(" [id: " + .id + "]"; .green) +
+.[]| select(.type == 1) | pc(.name; .blue) + pc(" [id: " + .id + "]"; .green) +
      "\n  " + pc("Username: "; .yellow) + .login.username +
      "\n  " + pc("Password: "; .yellow) + .login.password +
      "\n       " + pc("URL: "; .yellow) + .login.uris[].uri +
