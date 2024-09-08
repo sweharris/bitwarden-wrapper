@@ -1,2 +1,10 @@
 #!/bin/sh
-totpgen $(bw -raw list items --search "$@" | jq -r '.[]|select(.type==1)|.login.totp' | sed 's!.*/!!')
+seed=$(bw -raw list items --search "$@" | jq -r '.[]|select(.type==1)|.login.totp' | sed 's!.*/!!' | grep -v "^null$")
+
+set -- $seed
+if [ $# != 1 ]
+then
+  echo Search matches multiple entries.  Aborted
+  exit
+fi
+totpgen $seed
