@@ -24,6 +24,14 @@ my $TIME_STEP = 30;
 
 my $pname=$0; $pname=~s!^.*/!!;
 
+my $once=0;
+
+if (@ARGV && $ARGV[0] == "-1")
+{
+  $once=1;
+  shift;
+}
+
 my $seed = join("",@ARGV);
 die "Syntax: $pname base32seed\n" unless $seed;
 
@@ -64,5 +72,6 @@ while (1) {
   my $nextcode = do_totp($seed,$time+$TIME_STEP);
   my $diff = $TIME_STEP - ($time % $TIME_STEP);
   print "Current = $code - Next = $nextcode - Change in $diff seconds  \r";
+  exit if $once;
   sleep(1);
 }
