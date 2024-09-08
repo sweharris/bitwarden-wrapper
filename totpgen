@@ -32,7 +32,7 @@ if (@ARGV && $ARGV[0] == "-1")
   shift;
 }
 
-my $seed = join("",@ARGV);
+my $seed = uc(join("",@ARGV));
 die "Syntax: $pname base32seed\n" unless $seed;
 
 $seed=~s/ //g;
